@@ -4,46 +4,56 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"sync" // 同時にアクセスが来ても壊れないようにするための道具
+	"sync"
 )
 
-// 保存するデータの構造
-type VisitorLog struct {
-	CurrentVisitor string   `json:"current_visitor"`
-	AllVisitors    []string `json:"all_visitors"`
-	Count          int      `json:"count"`
-}
-
-// 擬似的なデータベース（メモリ上に保存）
+// メモリ上の擬似データベース
 var (
 	visitors []string
-	mu       sync.Mutex // 「一度に一人しか書き込めない」ようにする鍵
+	mu       sync.Mutex
 )
 
+// レスポンス用の共通構造体
+type MessageResponse struct {
+	Message string   `json:"message"`
+	Data    []string `json:"data,omitempty"` // 空の時はJSONに含めない
+}
+
 func main() {
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	// --- 窓口1: 名前を追加する (/add) ---
+	http.HandleFunc("/add", func(w http.ResponseWriter, r *http.Request) {
 		name := r.URL.Query().Get("user")
 		if name == "" {
-			name = "ゲスト"
+			http.Error(w, "userパラメータが必要です", http.StatusBadRequest)
+			return
 		}
 
-		// --- データの保存処理 ---
-		mu.Lock()         // 鍵をかける（他のアクセスを待たせる）
-		visitors = append(visitors, name) // リストに追加
-		currentCount := len(visitors)
-		mu.Unlock()       // 鍵をあける
-		// ----------------------
-
-		data := VisitorLog{
-			CurrentVisitor: name,
-			AllVisitors:    visitors,
-			Count:          currentCount,
-		}
+		mu.Lock()
+		visitors = append(visitors, name)
+		mu.Unlock()
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(data)
+		json.NewEncoder(w).Encode(MessageResponse{
+			Message: fmt.Sprintf("%s さんを登録しました！", name),
+		})
+	})
+
+	// --- 窓口2: 一覧を表示する (/list) ---
+	http.HandleFunc("/list", func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		// 内容をコピーして渡す（安全のため）
+		list := make([]string, len(visitors))
+		copy(list, visitors)
+		mu.Unlock()
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(MessageResponse{
+			Message: "来場者一覧です",
+			Data:    list,
+		})
 	})
 
 	fmt.Println("Server starting on http://localhost:8080...")
+	fmt.Println("Endpoints: /add?user=xxx, /list")
 	http.ListenAndServe(":8080", nil)
 }
