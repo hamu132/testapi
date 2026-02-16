@@ -1,0 +1,11 @@
+SQLをつかえるようにする。
+go mod init myapi           # プロジェクトの初期化
+go get github.com/mattn/go-sqlite3 # SQLite用のドライバーを取得
+
+
+Go言語について
+・Package宣言は自分のファイルのパッケージを指定する。(ファイルにつき必ず一つ。上のディレクトリ名をパッケージ名にする慣習あり。)
+・mainPackageだけはmain関数を入れる必要があり、エントリポイントとなる。
+・importはパッケージ化された他のライブラリを読み込む。
+
+

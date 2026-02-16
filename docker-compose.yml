@@ -1,0 +1,8 @@
+version: '3.8'
+services:
+  app:
+    build: .
+    ports:
+      - "8080:8080" # PCの8080番をコンテナの8080番に繋ぐ
+    volumes:
+      - .:/app # 自分のPCのファイルをコンテナ内と同期させる（DB保存のため）

@@ -1,2 +1,0 @@
-go mod init myapi           # プロジェクトの初期化
-go get github.com/mattn/go-sqlite3 # SQLite用のドライバーを取得
