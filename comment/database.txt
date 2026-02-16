@@ -6,3 +6,5 @@ CREATE TABLE IF NOT EXISTS visitors (id INTEGER PRIMARY KEY AUTOINCREMENT, name 
 INSERT INTO visitors(name) VALUES('a'); = visitorsテーブルに新しい値を入れる(name="a")
 
 SELECT name FROM visitors; //visitorsテーブルからname列を取得
+
+DELETE FROM visitors WHERE name = "aa" //visitorsテーブルからnameの条件に一致する行を削除

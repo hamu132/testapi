@@ -16,7 +16,7 @@ func main() {
 	// 1. データベースファイルを開く（なければ作成される）
 	var err error
 	//なければ新規作成、既に存在すればそれを使う
-	db, err = sql.Open("sqlite3", "./visitors.db")//SQLiteドライバを指定しその設定を持つDB管理オブジェクトを作りそれをdbに代入している
+	db, err = sql.Open("sqlite3", "./visitors.db") //SQLiteドライバを指定しその設定を持つDB管理オブジェクトを作りそれをdbに代入している
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -68,6 +68,33 @@ func main() {
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(names)
+	})
+	// --- /delete エンドポイント ---
+	http.HandleFunc("/delete", func(w http.ResponseWriter, r *http.Request) {
+		// 1. URLから削除したい名前を取得 (?user=名前)
+		name := r.URL.Query().Get("user")
+		if name == "" {
+			http.Error(w, "userパラメータが必要です", http.StatusBadRequest)
+			return
+		}
+
+		// 2. SQLのDELETE文を実行
+		// visitorsテーブルから、nameが一致する行を削除する
+		result, err := db.Exec("DELETE FROM visitors WHERE name = ?", name)
+		if err != nil {
+			http.Error(w, "削除に失敗しました", http.StatusInternalServerError)
+			return
+		}
+
+		// 3. 実際に何件削除されたか確認
+		rowsAffected, _ := result.RowsAffected()
+
+		w.Header().Set("Content-Type", "application/json")
+		if rowsAffected == 0 {
+			fmt.Fprintf(w, `{"message": "%s さんは見つかりませんでした"}`, name)
+		} else {
+			fmt.Fprintf(w, `{"message": "%s さんを削除しました"}`, name)
+		}
 	})
 
 	fmt.Println("DB版サーバー起動: http://localhost:8080")

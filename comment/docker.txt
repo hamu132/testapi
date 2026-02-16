@@ -1,1 +1,12 @@
 Dockerfileはgo.modのGo言語バージョンと合わせる必要がある
+
+最初かgo.modを書き換えた時はdocker compose up --buildでスタート。
+main.goを書き換えるだけなら
+docker compose exec app go build -o /main .
+docker compose restart app
+でＯＫ
+
+
+
+docker compose stop   # 一時停止（データは保持）
+docker compose down   # 停止してコンテナ自体を削除（一番きれいになる）→再び実行するにはdocker compose up --buildからやる必要あり
