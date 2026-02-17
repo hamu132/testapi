@@ -73,6 +73,8 @@ export default function Home() {
   // 画面が開いたときに一回だけ実行（単にfetchPosts()だと無限に再レンダリングする）
   useEffect(() => {
     fetchPosts();
+    const interval = setInterval(fetchPosts, 30000); // 30秒ごとに更新
+    return () => clearInterval(interval); // 画面を閉じたら停止
   }, []);
   
   const handlePost = async () => {
@@ -153,11 +155,11 @@ export default function Home() {
                   削除
                 </button>
                 <button 
-                  className="text-sm text-blue-400 hover:text-blue-600 hover:bg-blue-50 px-2 py-1 rounded transition-colors"
+                  className="text-sm flex items-center gap-1 text-pink-500 hover:bg-pink-50 px-3 py-1.5 rounded-full border border-pink-100 transition-all active:scale-90"
                   onClick={() => handleHeart(post.id)}
-                  title="いいね！"
                 >
-                  ❤️ {post.heart}
+                  <span>❤️</span>
+                  <span className="font-bold">{post.heart}</span>
                 </button>
               </div>
             </div>
