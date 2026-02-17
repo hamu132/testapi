@@ -1,8 +1,7 @@
-"use client"; // ブラウザで動くコードであることを宣言
+"use client";
 
 import { useState, useEffect } from "react";
 
-// データの型を定義（Goの構造体と同じにする）
 type Post = {
   name: string;
   body: string;
@@ -13,6 +12,9 @@ export default function Home() {
   const [posts, setPosts] = useState<Post[]>([]); // 投稿データを保存する「状態」
   const [loading, setLoading] = useState(true);   // 読み込み中かどうか
 
+  const [name, setName] = useState("");
+  const [message, setMessage] = useState("");
+  
   // APIからデータを取得する関数
   const fetchPosts = async () => {
     try {
@@ -32,42 +34,41 @@ export default function Home() {
   useEffect(() => {
     fetchPosts();
   }, []);
-  // frontend/src/app/page.tsx の return 部分を以下のように改造
+  
+  const handlePost = async () => {
+    if (!name || !message) return alert("名前とメッセージを入力してください");
+
+    await fetch(`https://stunning-fortnight-jj46xq76xj763px5g-8080.app.github.dev/add?user=${name}&message=${message}`);
+    
+    // 投稿後にStateを空にする（これで入力欄が勝手に清掃される！）
+    setName("");
+    setMessage("");
+    fetchPosts();
+  };
 
   return (
     <main className="max-w-2xl mx-auto p-8">
       <h1 className="text-3xl font-bold mb-8 text-blue-600">すごいSNS</h1>
 
-      {/* 投稿フォーム */}
-      <div className="mb-10 p-6 bg-gray-50 rounded-xl border border-gray-200">
+      <div className="mb-10 p-6 bg-gray-50 rounded-xl border border-gray-200 shadow-md">
         <div className="flex flex-col gap-4">
           <input 
             type="text" 
-            id="name-input"
             placeholder="名前" 
-            className="p-2 border rounded text-black"
+            className="p-3 border rounded-lg text-black focus:ring-2 focus:ring-blue-400 outline-none"
+            value={name} // Stateを紐付け
+            onChange={(e) => setName(e.target.value)} // 入力されたらStateを更新
           />
           <textarea 
-            id="body-input"
             placeholder="今なにしてる？" 
-            className="p-2 border rounded text-black"
+            className="p-3 border rounded-lg text-black h-24 focus:ring-2 focus:ring-blue-400 outline-none"
+            value={message} // Stateを紐付け
+            onChange={(e) => setMessage(e.target.value)} // 入力されたらStateを更新
           />
           <button 
-            onClick={async () => {
-              const name = (document.getElementById('name-input') as HTMLInputElement).value;
-              const body = (document.getElementById('body-input') as HTMLTextAreaElement).value;
-              
-              // GoのAPIを叩く
-              await fetch(`https://stunning-fortnight-jj46xq76xj763px5g-8080.app.github.dev/add?user=${name}&message=${body}`);
-              
-              // 投稿後に再読み込み
-              fetchPosts();
-              
-              // 入力欄をクリア
-              (document.getElementById('name-input') as HTMLInputElement).value = "";
-              (document.getElementById('body-input') as HTMLTextAreaElement).value = "";
-            }}
-            className="bg-blue-500 text-white font-bold py-2 rounded hover:bg-blue-600 transition"
+            onClick={handlePost}
+            className="bg-blue-500 text-white font-bold py-3 rounded-lg hover:bg-blue-600 transition-all disabled:bg-gray-300"
+            disabled={!name || !message} // 入力がない時はボタンを無効化
           >
             投稿する
           </button>
