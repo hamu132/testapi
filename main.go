@@ -13,9 +13,11 @@ import (
 var db *sql.DB
 
 type Post struct {
-	Name      string `json:"name"`
-	Body      string `json:"body"` // ここを追加！
-	CreatedAt string `json:"created_at"`
+    ID        int    `json:"id"` // IDを追加
+    Name      string `json:"name"`
+    Body      string `json:"body"`
+    CreatedAt string `json:"created_at"`
+	Heart int    `json:"heart"` // いいね数を追加
 }
 
 func main() {
@@ -37,7 +39,8 @@ func main() {
 		id INTEGER PRIMARY KEY AUTOINCREMENT, 
 		name TEXT,
 		body TEXT, -- ここを追加！
-		created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		heart INTEGER DEFAULT 0 -- いいね数を追加
 	);`
 	_, err = db.Exec(sqlStmt)
 	if err != nil {
@@ -71,7 +74,7 @@ func main() {
 	http.HandleFunc("/list", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		// SQLでデータを全件取得 (SELECT)
-		rows, err := db.Query("SELECT name, body, created_at FROM visitors ORDER BY created_at DESC")
+		rows, err := db.Query("SELECT id, name, body, created_at, heart FROM visitors ORDER BY created_at DESC")
 		if err != nil {
 			http.Error(w, "取得に失敗しました", 500)
 			return
@@ -81,7 +84,7 @@ func main() {
 		posts := []Post{}
 		for rows.Next() {
 			var p Post
-			rows.Scan(&p.Name, &p.Body, &p.CreatedAt)
+			rows.Scan(&p.ID, &p.Name, &p.Body, &p.CreatedAt, &p.Heart) // いいね数もスキャン
 			posts = append(posts, p)
 		}
 
@@ -92,15 +95,15 @@ func main() {
 	http.HandleFunc("/delete", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		// 1. URLから削除したい名前を取得 (?user=名前)
-		name := r.URL.Query().Get("user")
-		if name == "" {
-			http.Error(w, "userパラメータが必要です", http.StatusBadRequest)
+		id := r.URL.Query().Get("id")
+		if id == "" {
+			http.Error(w, "idパラメータが必要です", http.StatusBadRequest)
 			return
 		}
 
 		// 2. SQLのDELETE文を実行
-		// visitorsテーブルから、nameが一致する行を削除する
-		result, err := db.Exec("DELETE FROM visitors WHERE name = ?", name)
+		// visitorsテーブルから、idが一致する行を削除する
+		result, err := db.Exec("DELETE FROM visitors WHERE id = ?", id)
 		if err != nil {
 			http.Error(w, "削除に失敗しました", http.StatusInternalServerError)
 			return
@@ -111,9 +114,9 @@ func main() {
 
 		w.Header().Set("Content-Type", "application/json")
 		if rowsAffected == 0 {
-			fmt.Fprintf(w, `{"message": "%s さんは見つかりませんでした"}`, name)
+			fmt.Fprintf(w, `{"message": "%s さんは見つかりませんでした"}`, id)
 		} else {
-			fmt.Fprintf(w, `{"message": "%s さんを削除しました"}`, name)
+			fmt.Fprintf(w, `{"message": "%s さんを削除しました"}`, id)
 		}
 	})
 
@@ -146,6 +149,34 @@ func main() {
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(posts)
+	})
+
+	// --- /heart エンドポイント ---
+	http.HandleFunc("/heart", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		id := r.URL.Query().Get("id")
+		if id == "" {
+			http.Error(w, "idパラメータが必要です", 400)
+			return
+		}
+
+		_, err = db.Exec("UPDATE visitors SET heart = heart + 1 WHERE id = ?", id)
+		if err != nil {
+			http.Error(w, "いいねの更新に失敗しました", 500)
+			return
+		}
+
+		// 更新後のいいね数を取得
+		var newHeartCount int
+		err = db.QueryRow("SELECT heart FROM visitors WHERE id = ?", id).Scan(&newHeartCount)
+		if err != nil {
+			http.Error(w, "最新のカウント取得に失敗しました", 500)
+			return
+		}
+
+		// JSONで現在のカウントを返却
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]int{"heart": newHeartCount})
 	})
 
 	fmt.Println("DB版サーバー起動: http://localhost:8080")

@@ -12,3 +12,4 @@ SELECT 列名 FROM テ名 WHERE body LIKE %値% //パターン一致検索で列
 
 DELETE FROM (テ名) WHERE 列名 = "aa" //テーブルから列名の条件に一致する行を削除
 
+UPDATE テ名 SET 列名=値 WHERE 列名=値
