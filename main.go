@@ -113,6 +113,36 @@ func main() {
 		}
 	})
 
+	// --- /search エンドポイント ---
+	http.HandleFunc("/search", func(w http.ResponseWriter, r *http.Request) {
+		// 1. クエリパラメータ "q" から検索ワードを取得
+		query := r.URL.Query().Get("q")
+		if query == "" {
+			http.Error(w, "検索ワード(q)が必要です", 400)
+			return
+		}
+
+		// 2. SQLの LIKE 句を使って検索
+		// % を付けることで「その文字が含まれるもの」をすべて探します（部分一致）
+		searchWord := "%" + query + "%"
+		rows, err := db.Query("SELECT name, body, created_at FROM visitors WHERE body LIKE ? ORDER BY created_at DESC", searchWord)
+		if err != nil {
+			http.Error(w, "検索に失敗しました", 500)
+			return
+		}
+		defer rows.Close()
+
+		var posts []Post
+		for rows.Next() {
+			var p Post
+			rows.Scan(&p.Name, &p.Body, &p.CreatedAt)
+			posts = append(posts, p)
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(posts)
+	})
+
 	fmt.Println("DB版サーバー起動: http://localhost:8080")
 	http.ListenAndServe(":8080", nil)
 }

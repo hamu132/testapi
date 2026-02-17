@@ -7,7 +7,8 @@ INSERT INTO テ名(列名, 列名) VALUES('a', 'b')
 
 SELECT 列名 FROM (テ名); //テーブルから列を取得
 SELECT 列名 FROM (テ名) ORDER BY 列名 DESC //テーブルから列を取得（並び替え付き）
-SELECT 列名, 列名 FROM visitors ORDER BY 列名 DESC//複数の列を同時取得
+SELECT 列名, 列名 FROM テ名 ORDER BY 列名 DESC//複数の列を同時取得
+SELECT 列名 FROM テ名 WHERE body LIKE %値% //パターン一致検索で列を取得
 
 DELETE FROM (テ名) WHERE 列名 = "aa" //テーブルから列名の条件に一致する行を削除
 
