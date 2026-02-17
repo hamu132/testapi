@@ -44,8 +44,11 @@ func main() {
 		log.Fatal(err)
 	}
 
+	http.Handle("/", http.FileServer(http.Dir(".")))
+
 	// --- /add エンドポイント ---
 	http.HandleFunc("/add", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
 		name := r.URL.Query().Get("user")
 		body := r.URL.Query().Get("message") // 本文を取得
 
@@ -66,6 +69,7 @@ func main() {
 
 	// --- /list エンドポイント ---
 	http.HandleFunc("/list", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
 		// SQLでデータを全件取得 (SELECT)
 		rows, err := db.Query("SELECT name, body, created_at FROM visitors ORDER BY created_at DESC")
 		if err != nil {
@@ -87,6 +91,7 @@ func main() {
 	})
 	// --- /delete エンドポイント ---
 	http.HandleFunc("/delete", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
 		// 1. URLから削除したい名前を取得 (?user=名前)
 		name := r.URL.Query().Get("user")
 		if name == "" {
@@ -115,6 +120,7 @@ func main() {
 
 	// --- /search エンドポイント ---
 	http.HandleFunc("/search", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
 		// 1. クエリパラメータ "q" から検索ワードを取得
 		query := r.URL.Query().Get("q")
 		if query == "" {

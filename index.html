@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>たけるのSNS</title>
+</head>
+<body>
+    <h1>たけるのSNS</h1>
+    
+    <input type="text" id="username" placeholder="名前">
+    <input type="text" id="message" placeholder="メッセージ">
+    <button onclick="addPost()">投稿する</button>
+
+    <hr>
+    
+    <div id="posts"></div>
+
+    <script>
+        // 1. 投稿一覧をAPIから取ってきて表示する関数
+        async function loadPosts() {
+            //const res = await fetch('http://localhost:8080/list');
+            const res = await fetch('/list'); // これで「自分と同じサーバーの /list」を見に行くようになります
+            const posts = await res.json();
+            
+            const div = document.getElementById('posts');
+            div.innerHTML = ''; // 一旦クリア
+            
+            posts.forEach(p => {
+                const item = document.createElement('div');
+                item.innerHTML = `<strong>${p.name}</strong> (${p.created_at})<br>${p.body}<hr>`;
+                div.appendChild(item);
+            });
+        }
+
+        // 2. 投稿を送信する関数
+        async function addPost() {
+            const user = document.getElementById('username').value;
+            const msg = document.getElementById('message').value;
+            
+            await fetch(`/add?user=${user}&message=${msg}`);
+            loadPosts(); // 投稿し終わったら一覧を更新
+        }
+
+        // 起動時に読み込む
+        loadPosts();
+    </script>
+</body>
+</html>
