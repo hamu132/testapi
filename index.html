@@ -10,6 +10,8 @@
     <input type="text" id="username" placeholder="名前">
     <input type="text" id="message" placeholder="メッセージ">
     <button onclick="addPost()">投稿する</button>
+    <hr>
+    <input type="text" id="search" placeholder="検索" oninput="searchPosts()">
 
     <hr>
     
@@ -39,6 +41,31 @@
             
             await fetch(`/add?user=${user}&message=${msg}`);
             loadPosts(); // 投稿し終わったら一覧を更新
+        }
+
+        async function searchPosts() {
+            const query = document.getElementById('search').value;
+            if (query === '') {
+                loadPosts(); // 検索クエリが空なら全件表示
+                return;
+            }
+            const res = await fetch(`/search?q=${query}`);
+            const posts = await res.json();
+            
+            const div = document.getElementById('posts');
+            div.innerHTML = ''; // 一旦クリア
+
+            if (posts.length === 0) {
+                console.log('No posts found');
+                div.innerHTML = '<p>一致する投稿が見つかりませんでした。</p>';
+                return;
+            }
+            
+            posts.forEach(p => {
+                const item = document.createElement('div');
+                item.innerHTML = `<strong>${p.name}</strong> (${p.created_at})<br>${p.body}<hr>`;
+                div.appendChild(item);
+            });
         }
 
         // 起動時に読み込む

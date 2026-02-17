@@ -13,9 +13,9 @@ import (
 var db *sql.DB
 
 type Post struct {
-    Name      string `json:"name"`
-    Body      string `json:"body"`       // ここを追加！
-    CreatedAt string `json:"created_at"`
+	Name      string `json:"name"`
+	Body      string `json:"body"` // ここを追加！
+	CreatedAt string `json:"created_at"`
 }
 
 func main() {
@@ -78,13 +78,12 @@ func main() {
 		}
 		defer rows.Close()
 
-		var posts []Post
+		posts := []Post{}
 		for rows.Next() {
 			var p Post
 			rows.Scan(&p.Name, &p.Body, &p.CreatedAt)
 			posts = append(posts, p)
 		}
-		
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(posts)
@@ -138,7 +137,7 @@ func main() {
 		}
 		defer rows.Close()
 
-		var posts []Post
+		posts := []Post{}
 		for rows.Next() {
 			var p Post
 			rows.Scan(&p.Name, &p.Body, &p.CreatedAt)
