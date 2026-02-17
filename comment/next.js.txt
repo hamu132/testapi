@@ -1,0 +1,10 @@
+npx create-next-app@latest frontend //Next.jsのインストール
+
+cd frontend
+npm run dev //サーバーの立ち上げ
+
+
+・（CodeSpaceに限る話かもしれないが、）GoサーバーとNext.jsサーバーを別のポートで起動すると、アクセス制限エラーが出るので
+Goファイルでw.Header().Set("Access-Control-Allow-Origin", "*")として、ポートの表示範囲をPublicにする必要がある。
+
+・
