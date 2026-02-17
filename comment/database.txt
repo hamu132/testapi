@@ -1,10 +1,13 @@
 データベース命令について
-CREATE TABLE IF NOT EXISTS visitors; = (存在しなければ)visitorsテーブルを作成
+CREATE TABLE IF NOT EXISTS (テ名); = (存在しなければ)テ名を作成
+CREATE TABLE IF NOT EXISTS (テ名) (id INTEGER PRIMARY KEY AUTOINCREMENT, 列名 TEXT); = idが主キー(自動入力)、列名が値
 
-CREATE TABLE IF NOT EXISTS visitors (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT); = idが主キー(自動入力)、nameが値
+INSERT INTO テ名(列名) VALUES('a'); // テーブルに新しい値を入れる(列名="a")
+INSERT INTO テ名(列名, 列名) VALUES('a', 'b')
 
-INSERT INTO visitors(name) VALUES('a'); = visitorsテーブルに新しい値を入れる(name="a")
+SELECT 列名 FROM (テ名); //テーブルから列を取得
+SELECT 列名 FROM (テ名) ORDER BY 列名 DESC //テーブルから列を取得（並び替え付き）
+SELECT 列名, 列名 FROM visitors ORDER BY 列名 DESC//複数の列を同時取得
 
-SELECT name FROM visitors; //visitorsテーブルからname列を取得
+DELETE FROM (テ名) WHERE 列名 = "aa" //テーブルから列名の条件に一致する行を削除
 
-DELETE FROM visitors WHERE name = "aa" //visitorsテーブルからnameの条件に一致する行を削除

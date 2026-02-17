@@ -12,6 +12,12 @@ import (
 
 var db *sql.DB
 
+type Post struct {
+    Name      string `json:"name"`
+    Body      string `json:"body"`       // ここを追加！
+    CreatedAt string `json:"created_at"`
+}
+
 func main() {
 	// 1. データベースファイルを開く（なければ作成される）
 	var err error
@@ -24,8 +30,15 @@ func main() {
 
 	// 2. テーブル（データの表）を作成する
 	//visitorsという名前の表を(存在しなければ)作る
-	//テーブルの中身：主キーで数値の「id」、文字列の値「name」
-	sqlStmt := `CREATE TABLE IF NOT EXISTS visitors (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT);`
+	//テーブルの中身：主キーで数値の「id」、文字列の値「name」、日付の値「created_at」
+	//sqlStmt := `CREATE TABLE IF NOT EXISTS visitors (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT);`
+	// テーブル作成のSQLを更新
+	sqlStmt := `CREATE TABLE IF NOT EXISTS visitors (
+		id INTEGER PRIMARY KEY AUTOINCREMENT, 
+		name TEXT,
+		body TEXT, -- ここを追加！
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+	);`
 	_, err = db.Exec(sqlStmt)
 	if err != nil {
 		log.Fatal(err)
@@ -34,40 +47,43 @@ func main() {
 	// --- /add エンドポイント ---
 	http.HandleFunc("/add", func(w http.ResponseWriter, r *http.Request) {
 		name := r.URL.Query().Get("user")
-		if name == "" {
-			http.Error(w, "userが必要です", 400)
+		body := r.URL.Query().Get("message") // 本文を取得
+
+		if name == "" || body == "" {
+			http.Error(w, "userとmessageが必要です", 400)
 			return
 		}
 
-		// SQLでデータを挿入 (INSERT)
-		_, err := db.Exec("INSERT INTO visitors(name) VALUES(?)", name)
+		// INSERT文に body を追加
+		_, err := db.Exec("INSERT INTO visitors(name, body) VALUES(?, ?)", name, body)
 		if err != nil {
 			http.Error(w, "保存に失敗しました", 500)
 			return
 		}
 
-		fmt.Fprintf(w, "%s をデータベースに保存しました", name)
+		fmt.Fprintf(w, "投稿を保存しました")
 	})
 
 	// --- /list エンドポイント ---
 	http.HandleFunc("/list", func(w http.ResponseWriter, r *http.Request) {
 		// SQLでデータを全件取得 (SELECT)
-		rows, err := db.Query("SELECT name FROM visitors")
+		rows, err := db.Query("SELECT name, body, created_at FROM visitors ORDER BY created_at DESC")
 		if err != nil {
 			http.Error(w, "取得に失敗しました", 500)
 			return
 		}
 		defer rows.Close()
 
-		var names []string
+		var posts []Post
 		for rows.Next() {
-			var name string
-			rows.Scan(&name)
-			names = append(names, name)
+			var p Post
+			rows.Scan(&p.Name, &p.Body, &p.CreatedAt)
+			posts = append(posts, p)
 		}
+		
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(names)
+		json.NewEncoder(w).Encode(posts)
 	})
 	// --- /delete エンドポイント ---
 	http.HandleFunc("/delete", func(w http.ResponseWriter, r *http.Request) {
