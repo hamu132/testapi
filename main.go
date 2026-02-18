@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"io"
 
 	_ "github.com/mattn/go-sqlite3" // ドライバーを匿名インポート
 )
@@ -179,6 +181,38 @@ func main() {
 		json.NewEncoder(w).Encode(map[string]int{"heart": newHeartCount})
 	})
 
+	// main.go に追加するイメージ
+	http.HandleFunc("/upload", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		
+		// 1. ファイルを受け取る
+		file, header, err := r.FormFile("image")
+		if err != nil {
+			http.Error(w, "ファイルの取得に失敗しました", 400)
+			return
+		}
+		defer file.Close()
+
+		// 2. 保存先パスを作成 (例: uploads/filename.jpg)
+		savePath := "uploads/" + header.Filename
+		out, err := os.Create(savePath)
+		if err != nil {
+			http.Error(w, "保存に失敗しました", 500)
+			return
+		}
+		defer out.Close()
+
+		// 3. 内容を書き込む
+		io.Copy(out, file)
+
+		// 保存したパスを返す
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{"path": "/" + savePath})
+	})
+
+	// 保存した画像をブラウザから見れるようにする設定（これ重要！）
+	http.Handle("/uploads/", http.StripPrefix("/uploads/", http.FileServer(http.Dir("uploads"))))
+	
 	fmt.Println("DB版サーバー起動: http://localhost:8080")
 	http.ListenAndServe(":8080", nil)
 }

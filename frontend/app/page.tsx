@@ -19,6 +19,8 @@ export default function Home() {
 
   const [query, setQuery] = useState("");// 検索クエリの状態
 
+  const [image, setImage] = useState<File | null>(null); // 画像ファイルの状態
+
   // APIからデータを取得する関数
   const fetchPosts = async () => {
     try {
@@ -67,6 +69,21 @@ export default function Home() {
     
     // 1つだけ投稿を更新するか、全体を再読み込み
     fetchPosts(); 
+  };
+
+
+  const handleImageUpload = async () => {
+    if (!image) return;
+
+    const formData = new FormData();
+    formData.append("image", image); // "image" という名前でファイルをセット
+
+    const res = await fetch("https://stunning-fortnight-jj46xq76xj763px5g-8080.app.github.dev/upload", {
+      method: "POST",
+      body: formData, // JSONではなくFormDataを送る
+    });
+    const data = await res.json();
+    console.log("保存先:", data.path);
   };
 
 
@@ -120,6 +137,21 @@ export default function Home() {
             value={message} // Stateを紐付け
             onChange={(e) => setMessage(e.target.value)} // 入力されたらStateを更新
           />
+          <input 
+            type="file" 
+            accept="image/*" // 画像ファイルのみを受け取る
+            onChange={(e) => {
+              if (e.target.files && e.target.files[0]) {
+                setImage(e.target.files[0]);
+              }
+            }}
+          />
+          <button 
+            onClick={handleImageUpload}
+            className="bg-green-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-600 transition-all"
+          >
+            画像をアップロード
+          </button>
           <button 
             onClick={handlePost}
             className="bg-blue-500 text-white font-bold py-3 rounded-lg hover:bg-blue-600 transition-all disabled:bg-gray-300"
