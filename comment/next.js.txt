@@ -10,3 +10,7 @@ Goファイルでw.Header().Set("Access-Control-Allow-Origin", "*")として、�
 ・ファイル名がpage.tsxであることが重要
 
 ・useStateは現在の値と値を更新するための関数をセットにした配列を返している。引数は初期値。こんなことをしているのは、再レンダリングを素早く行うため。
+
+・await fetchについて、
+GET：データ取得(送るデータはURLに乗せられるレベル)
+POST：データ登録（送るデータが膨大）画像はFormDataを経由してPOSTする。

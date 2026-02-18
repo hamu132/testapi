@@ -4,10 +4,11 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
-	"io"
+	"time"
 
 	_ "github.com/mattn/go-sqlite3" // ドライバーを匿名インポート
 )
@@ -15,11 +16,12 @@ import (
 var db *sql.DB
 
 type Post struct {
-    ID        int    `json:"id"` // IDを追加
-    Name      string `json:"name"`
-    Body      string `json:"body"`
-    CreatedAt string `json:"created_at"`
-	Heart int    `json:"heart"` // いいね数を追加
+	ID        int    `json:"id"` // IDを追加
+	Name      string `json:"name"`
+	Body      string `json:"body"`
+	ImagePath string `json:"image_path"` // 画像パスを追加
+	CreatedAt string `json:"created_at"`
+	Heart     int    `json:"heart"` // いいね数を追加
 }
 
 func main() {
@@ -40,9 +42,10 @@ func main() {
 	sqlStmt := `CREATE TABLE IF NOT EXISTS visitors (
 		id INTEGER PRIMARY KEY AUTOINCREMENT, 
 		name TEXT,
-		body TEXT, -- ここを追加！
+		body TEXT,
+		image_path TEXT,
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-		heart INTEGER DEFAULT 0 -- いいね数を追加
+		heart INTEGER DEFAULT 0
 	);`
 	_, err = db.Exec(sqlStmt)
 	if err != nil {
@@ -55,15 +58,16 @@ func main() {
 	http.HandleFunc("/add", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		name := r.URL.Query().Get("user")
-		body := r.URL.Query().Get("message") // 本文を取得
+		body := r.URL.Query().Get("message")         // 本文を取得
+		imagePath := r.URL.Query().Get("image_path") // 画像パスを取得
 
 		if name == "" || body == "" {
 			http.Error(w, "userとmessageが必要です", 400)
 			return
 		}
 
-		// INSERT文に body を追加
-		_, err := db.Exec("INSERT INTO visitors(name, body) VALUES(?, ?)", name, body)
+		// INSERT文に body と image_path を追加
+		_, err := db.Exec("INSERT INTO visitors(name, body, image_path) VALUES(?, ?, ?)", name, body, imagePath)
 		if err != nil {
 			http.Error(w, "保存に失敗しました", 500)
 			return
@@ -76,7 +80,7 @@ func main() {
 	http.HandleFunc("/list", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		// SQLでデータを全件取得 (SELECT)
-		rows, err := db.Query("SELECT id, name, body, created_at, heart FROM visitors ORDER BY created_at DESC")
+		rows, err := db.Query("SELECT id, name, body, image_path, created_at, heart FROM visitors ORDER BY created_at DESC")
 		if err != nil {
 			http.Error(w, "取得に失敗しました", 500)
 			return
@@ -86,7 +90,7 @@ func main() {
 		posts := []Post{}
 		for rows.Next() {
 			var p Post
-			rows.Scan(&p.ID, &p.Name, &p.Body, &p.CreatedAt, &p.Heart) // いいね数もスキャン
+			rows.Scan(&p.ID, &p.Name, &p.Body, &p.ImagePath, &p.CreatedAt, &p.Heart) // いいね数もスキャン
 			posts = append(posts, p)
 		}
 
@@ -181,10 +185,10 @@ func main() {
 		json.NewEncoder(w).Encode(map[string]int{"heart": newHeartCount})
 	})
 
-	// main.go に追加するイメージ
+	// 画像保存&保存先パス返却エンドポイント
 	http.HandleFunc("/upload", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
-		
+
 		// 1. ファイルを受け取る
 		file, header, err := r.FormFile("image")
 		if err != nil {
@@ -194,7 +198,7 @@ func main() {
 		defer file.Close()
 
 		// 2. 保存先パスを作成 (例: uploads/filename.jpg)
-		savePath := "uploads/" + header.Filename
+		savePath := "uploads/" + fmt.Sprintf("%d_", time.Now().Unix()) + header.Filename
 		out, err := os.Create(savePath)
 		if err != nil {
 			http.Error(w, "保存に失敗しました", 500)
@@ -212,7 +216,7 @@ func main() {
 
 	// 保存した画像をブラウザから見れるようにする設定（これ重要！）
 	http.Handle("/uploads/", http.StripPrefix("/uploads/", http.FileServer(http.Dir("uploads"))))
-	
+
 	fmt.Println("DB版サーバー起動: http://localhost:8080")
 	http.ListenAndServe(":8080", nil)
 }

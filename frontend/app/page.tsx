@@ -6,6 +6,7 @@ type Post = {
   id: number;
   name: string;
   body: string;
+  image_path: string; // 画像のパスを追加
   created_at: string;
   heart: number; // いいね数を追加
 };
@@ -20,8 +21,9 @@ export default function Home() {
   const [query, setQuery] = useState("");// 検索クエリの状態
 
   const [image, setImage] = useState<File | null>(null); // 画像ファイルの状態
+  const [imagePath, setImagePath] = useState<string>(""); // アップロードされた画像のパス
 
-  // APIからデータを取得する関数
+  // 一覧表示
   const fetchPosts = async () => {
     try {
       // APIのURLは、自分のCodespacesのURLに置き換えてください
@@ -35,6 +37,8 @@ export default function Home() {
       setLoading(false);
     }
   };
+
+  // 1. 削除用の関数（Goの /delete エンドポイントを叩く）
   const deletePost = async (id: number) => {
     try {
       await fetch(`https://stunning-fortnight-jj46xq76xj763px5g-8080.app.github.dev/delete?id=${id}`);
@@ -63,6 +67,7 @@ export default function Home() {
     }
   };
 
+  // 3. いいね用の関数（Goの /heart エンドポイントを叩く）
   const handleHeart = async (id: number) => {
     const res = await fetch(`https://stunning-fortnight-jj46xq76xj763px5g-8080.app.github.dev/heart?id=${id}`);
     const data = await res.json();
@@ -71,12 +76,12 @@ export default function Home() {
     fetchPosts(); 
   };
 
-
-  const handleImageUpload = async () => {
-    if (!image) return;
+  // 4. 画像をサーバーに保存
+  const handleImageUpload = async (file?: File) => {
+    if (!file) return;
 
     const formData = new FormData();
-    formData.append("image", image); // "image" という名前でファイルをセット
+    formData.append("image", file); // "image" という名前でファイルをセット
 
     const res = await fetch("https://stunning-fortnight-jj46xq76xj763px5g-8080.app.github.dev/upload", {
       method: "POST",
@@ -84,6 +89,7 @@ export default function Home() {
     });
     const data = await res.json();
     console.log("保存先:", data.path);
+    setImagePath(data.path); // 画像のパスをStateに保存
   };
 
 
@@ -94,14 +100,16 @@ export default function Home() {
     return () => clearInterval(interval); // 画面を閉じたら停止
   }, []);
   
+  // 投稿用の関数（Goの /add エンドポイントを叩く）
   const handlePost = async () => {
     if (!name || !message) return alert("名前とメッセージを入力してください");
-
-    await fetch(`https://stunning-fortnight-jj46xq76xj763px5g-8080.app.github.dev/add?user=${name}&message=${message}`);
+    const encodedPath = encodeURIComponent(imagePath);
+    await fetch(`https://stunning-fortnight-jj46xq76xj763px5g-8080.app.github.dev/add?user=${name}&message=${message}&image_path=${encodedPath}`);
     
     // 投稿後にStateを空にする（これで入力欄が勝手に清掃される！）
     setName("");
     setMessage("");
+    setImagePath(""); // 画像パスもクリア
     fetchPosts();
   };
 
@@ -137,21 +145,20 @@ export default function Home() {
             value={message} // Stateを紐付け
             onChange={(e) => setMessage(e.target.value)} // 入力されたらStateを更新
           />
-          <input 
-            type="file" 
-            accept="image/*" // 画像ファイルのみを受け取る
-            onChange={(e) => {
-              if (e.target.files && e.target.files[0]) {
-                setImage(e.target.files[0]);
-              }
-            }}
-          />
-          <button 
-            onClick={handleImageUpload}
-            className="bg-green-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-600 transition-all"
-          >
-            画像をアップロード
-          </button>
+          <label className="cursor-pointer bg-green-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-600 transition-all text-center inline-block">
+            📷 画像を選択
+            <input 
+              type="file" 
+              className="hidden" // 本物のインプットは隠す！
+              accept="image/*"
+              onChange={(e) => {
+                if (e.target.files && e.target.files[0]) {
+                  setImage(e.target.files[0]);
+                  handleImageUpload(e.target.files[0]);
+                }
+              }}
+            />
+          </label>
           <button 
             onClick={handlePost}
             className="bg-blue-500 text-white font-bold py-3 rounded-lg hover:bg-blue-600 transition-all disabled:bg-gray-300"
@@ -174,6 +181,16 @@ export default function Home() {
                 <span className="text-sm text-gray-500">{post.created_at}</span>
               </div>
               <p className="text-gray-800">{post.body}</p>
+              <p className="text-gray-800">{post.image_path}</p>
+              {post.image_path && (
+                <div className="mt-3 overflow-hidden rounded-lg border border-gray-100">
+                  <img 
+                    src={`https://stunning-fortnight-jj46xq76xj763px5g-8080.app.github.dev${post.image_path}`} 
+                    alt="投稿画像" 
+                    className="w-full h-auto object-cover"
+                  />
+                </div>
+              )}
               <div className="mt-4 flex gap-4">
                 <button 
                   className="text-sm text-red-400 hover:text-red-600 hover:bg-red-50 px-2 py-1 rounded transition-colors"
