@@ -26,9 +26,8 @@ export default function Home() {
   // 一覧表示
   const fetchPosts = async () => {
     try {
-      // APIのURLは、自分のCodespacesのURLに置き換えてください
-      // 末尾に /list をつけるのを忘れずに！
-      const res = await fetch("https://stunning-fortnight-jj46xq76xj763px5g-8080.app.github.dev/list");
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      const res = await fetch(`${apiUrl}/list`);
       const data = await res.json();
       setPosts(data);
     } catch (error) {
@@ -41,7 +40,8 @@ export default function Home() {
   // 1. 削除用の関数（Goの /delete エンドポイントを叩く）
   const deletePost = async (id: number) => {
     try {
-      await fetch(`https://stunning-fortnight-jj46xq76xj763px5g-8080.app.github.dev/delete?id=${id}`);
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      await fetch(`${apiUrl}/delete?id=${id}`);
       fetchPosts(); // 投稿を削除した後、最新の投稿一覧を取得
     } catch (error) {
       console.error("投稿の削除に失敗しました", error);
@@ -53,9 +53,10 @@ export default function Home() {
     setLoading(true);
     try {
       // クエリが空なら全件取得、あれば検索
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
       const url = q 
-        ? `https://stunning-fortnight-jj46xq76xj763px5g-8080.app.github.dev/search?q=${q}`
-        : `https://stunning-fortnight-jj46xq76xj763px5g-8080.app.github.dev/list`;
+        ? `${apiUrl}/search?q=${q}`
+        : `${apiUrl}/list`;
         
       const res = await fetch(url);
       const data = await res.json();
@@ -69,7 +70,8 @@ export default function Home() {
 
   // 3. いいね用の関数（Goの /heart エンドポイントを叩く）
   const handleHeart = async (id: number) => {
-    const res = await fetch(`https://stunning-fortnight-jj46xq76xj763px5g-8080.app.github.dev/heart?id=${id}`);
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+    const res = await fetch(`${apiUrl}/heart?id=${id}`);
     const data = await res.json();
     
     // 1つだけ投稿を更新するか、全体を再読み込み
@@ -82,8 +84,8 @@ export default function Home() {
 
     const formData = new FormData();
     formData.append("image", file); // "image" という名前でファイルをセット
-
-    const res = await fetch("https://stunning-fortnight-jj46xq76xj763px5g-8080.app.github.dev/upload", {
+    
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/upload`, {
       method: "POST",
       body: formData, // JSONではなくFormDataを送る
     });
@@ -104,7 +106,8 @@ export default function Home() {
   const handlePost = async () => {
     if (!name || !message) return alert("名前とメッセージを入力してください");
     const encodedPath = encodeURIComponent(imagePath);
-    await fetch(`https://stunning-fortnight-jj46xq76xj763px5g-8080.app.github.dev/add?user=${name}&message=${message}&image_path=${encodedPath}`);
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+    await fetch(`${apiUrl}/add?user=${name}&message=${message}&image_path=${encodedPath}`);
     
     // 投稿後にStateを空にする（これで入力欄が勝手に清掃される！）
     setName("");
@@ -185,7 +188,7 @@ export default function Home() {
               {post.image_path && (
                 <div className="mt-3 overflow-hidden rounded-lg border border-gray-100">
                   <img 
-                    src={`https://stunning-fortnight-jj46xq76xj763px5g-8080.app.github.dev${post.image_path}`} 
+                    src={`${process.env.NEXT_PUBLIC_API_URL}${post.image_path}`} 
                     alt="投稿画像" 
                     className="w-full h-auto object-cover"
                   />
