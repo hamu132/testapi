@@ -217,6 +217,12 @@ func main() {
 	// 保存した画像をブラウザから見れるようにする設定（これ重要！）
 	http.Handle("/uploads/", http.StripPrefix("/uploads/", http.FileServer(http.Dir("uploads"))))
 
-	fmt.Println("DB版サーバー起動: http://localhost:8080")
-	http.ListenAndServe(":8080", nil)
+	
+	// 修正後: 環境変数からポート番号を取得するようにする
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080" // ローカル用のデフォルト
+	}
+	http.ListenAndServe(":"+port, nil)
+	fmt.Println("DB版サーバー起動: http://localhost:" + port)
 }
